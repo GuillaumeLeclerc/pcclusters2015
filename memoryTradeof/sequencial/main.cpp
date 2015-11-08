@@ -35,8 +35,11 @@ int main(int argc, const char** argv) {
 		if (i >= values.size()) {
 			values.resize(i + 1, -1);
 		}
-		values[i] = seq;
-		std::cout << steps << '\t' << seq  << std::endl;
+		if (i < max * 0.01) {
+			values[i] = seq;
+		} else {
+			std::cout << i << '\t' << steps << '\t' << seq  << std::endl;
+		}
 	}
 
 	return 0;

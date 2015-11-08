@@ -8,13 +8,10 @@ long syracuse_next(long n) {
 }
 
 int main(int argc, const char** argv) {
-	std::cout << "Hello world" << std::endl;
-
 	int i = 1;
 	long max = 100000;
 	if (argc > 1) {
 		max = atoi(argv[1]);
-		std::cout << "Target: " << max << std::endl;
 	}
 
 	while (i < max) {
@@ -25,7 +22,7 @@ int main(int argc, const char** argv) {
 			v = syracuse_next(v);
 			seq++;
 		}
-		std::cout << i << ":" << seq << std::endl;
+		std::cout << seq << std::endl;
 	}
 
 	return 0;
