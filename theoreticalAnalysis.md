@@ -48,7 +48,7 @@ Using the very naive approach we computed the average number of steps from $10^1
 
 ```
 
-As you might remark, the values are almost perfectly linear. It was not expected but it will be very convinient for our analysis. As we are in exponential scale we can deduce that the number of steps for each starting point is logarithmic. To be more precise here is the approximate formula : $$ f(x) \simeq 7.44 \times 24.6(x - 1)$$
+As you might remark, the values are almost perfectly linear. It was not expected but it will be very convinient for our analysis. As we are in exponential scale we can deduce that the number of steps for each starting point is logarithmic. To be more precise here is the approximate formula : $$ f(x) \simeq 7.44 + 24.6(x - 1)$$
 
 We now have the number of steps of the naive algorithm : $$ T\times f(\log_{10}(T)) = \mathcal{O}(T\log(T))$$
 
@@ -106,3 +106,94 @@ And here are the result if only 1% of the values are availbles:
 ```
 
 As the experiment shows, it seems that the value is still constant, Only the the constant change. This is great for us because it means we still have a linear algorithm even if all the memory is not shared between nodes.
+
+## Timings analysis
+
+Let define the 3 parameters of our models:
+
+$$ 
+\begin{aligned}
+&N : \text {The number of computation nodes} \\
+& M : \text {The number of rounds} \\
+&T : \text {The target (The number of series we want to compute)} 
+\end{aligned}
+$$
+
+We will cut the interval we want to compute into $M \times N$ sub-intervals named $\tau_1$ to $\tau_{M\times N}$. In our model we will assume the the work associated to a sub-intervals do not deviate too much from the average case. We will note $t = \frac{T}{N \times M}$ the number of series to compute in a given sub-interval.
+
+In round $r$ each node (of id $n$) will compute $\tau_{n + r\times N}$. And between each computation round, rach node share the new values he found so the others can use it to shorten their computation time.
+
+Here are some timing diagrams for different parameters.
+
+![$N = 4, M = 2$](tdiag4-2.png)
+	
+
+![$N = 3, M = 3$](tdiag3-3.png)
+
+
+![$N = 10, M = 5$](tdiag10-5.png)
+
+We could come up with a more clever way of scheduling work (by filling the blank under the send "diagonal"). But it seems the merging part of the algorithm will not take a lot of time so it might be an overoptimisation. We might reconsider it after if the expermientations shows that this assumption is wrong.
+
+As we can see on the timing diagram the critical path is clearly a straight line on node 1.
+
+We will now try to estimate the speedup using this model. The time to solve the problem with the optimized sequential algorithm is $W_{seq} = C_1 \times T$ for some $C_1$
+
+The time to solve a sub-interval(red block in the timing diagram) assuming we have enough precomputed values available is $W_{si} = C_2 \times t$. In average we have $C_2 > C_1$.
+
+In the communication part, each node has to send the new values it precomputed during the previous round to all other nodes. We know we can't have more new values than the number of the iterations of the algorithm we can therefore deduce that each broadcast can be done in $C_3 \times \log(N) \times t$ for some $C_3$. We need to do this for each node so the communication part can be done in $W_{com} = C_3 \times N \log(N)\times t$.
+
+In the last part (yellow in the timing diagram), each node has to send his results. But it does not need to send it all because most of it was already sent during the previous communication rounds. It only has to send exactly $t$ values. It can be done in time $C_4\times t$ for some $C_4$. The whole merging phase can be done in $W_{merge} = C_4Nt$.
+
+We can now compute the length of the critical path ($W_{cp}$).
+
+$$ 
+\begin{aligned}
+W_{cp} &= M\times W_{si} + (M-1)W_{com} + W_{merge} \\
+&= MC_2t + (M-1)tN\log(N)C_3 + NtC_4 \\
+&= MC_2\frac{T}{NM} + (M-1)\frac{T}{NM}N\log(N)C_3 + N\frac{T}{NM}C_4 \\
+&= \frac{C_2T}{N} + (M-1)\frac{T}{M}\log(N)C_3 + \frac{T}{M}C_4 \\
+\end{aligned}
+$$
+To simplifiy our understanding instead of computing $W_{cp}$ we will compute an upper bound for it. Let's consider $C_5 = \max(C_3, C_4)$
+$$ 
+\begin{aligned}
+W_{cp} &< \frac{C_2T}{N} + \frac{T}{M}\left((M-1)\log(N)C_5 + C_5 \right)\\
+&< \frac{C_2T}{N} + \frac{T}{M}\left((M-1)\log(N)C_5 + C_5\log(N) \right) \text{because } N \geq 1\\
+&= \frac{C_2T}{N} + \frac{T}{M}M\log(N)C_5 \\
+&= \frac{C_2T}{N} + T\log(N)C_5 \\
+&= T\left(\frac{C_2}{N} + \log(N)C_5\right) \\
+\end{aligned}
+$$
+
+Let's compute the speedup: 
+
+$$ 
+\begin{aligned}
+S_p &= \frac{W_{seq}}{W_{cp}} \\
+&> \frac{TC_1}{T\left(\frac{C_2}{N} + \log(N)C_5\right)} \\
+&= \frac{C_1}{\frac{C_2}{N} + \log(N)C_5} \\
+&= \frac{NC_1}{C_2 + N\log(N)C_5} \\
+\end{aligned}
+$$
+
+As we can see the limit of our speedup when N reach $\infty$ is 0. But for some values of the constant we can get a positive speedup for some values of N. We can split our analysis into 3 cases.
+
+- $C_5 \sim C_2$: The speedup is always decreasing, and less than 1.
+- $C_5 < C_2$: The speedup grows until it reach a global maximum and the decrease to 0.
+- $C_5 \ll C_2$: The speedup is almost linear and the slope of the line is $C_1/C_2$
+
+You can see the 3 cases on Figure 4.
+
+![Theoretical simulations of the speedup](speedup.png)
+
+## Estimating the values of the constants
+
+In order to predict if there will be a speedup in real life we need to have an rough idea of $C_1$, $C_2$ and $C_5$.
+
+From experiments on the sequential program  we found that $C_1 \simeq C_2 \simeq 3\times 10^{-8}$
+
+If we suppose we have an Intel 40Gb/s QDR IB network, according to the mellanox website we would have a throughput of 3.2GB/s. $C_5$ roughly represent the time required to send an integer. Our integers are encoded with 32bits. We can estimate $C_5 \sim \frac{32}{3.2\times 2^{30}} = 9.3 \times 10^{-9}$
+
+With this constants the best speedup we could acheive is $1.5$ with $3$ nodes
+
