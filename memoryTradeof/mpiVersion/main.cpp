@@ -70,23 +70,24 @@ int main (int argc, char* argv[])
   int rank, size;
   int max;
   int to;
+  int rounds;
 
   int from;
-
-  const int rounds = 2000;
 
   MPI_Init (&argc, &argv);      /* starts MPI */
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);        /* get current process id */
   MPI_Comm_size (MPI_COMM_WORLD, &size);        /* get number of processes */
   if (rank == 0) {
-    if (argc < 2) {
-      std::cout << "You must give the number of series to compute" << std::endl;
+    if (argc < 3) {
+      std::cout << "You must give the number of series to compute and the number of rounds" << std::endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
     max = atoi(argv[1]);
+    rounds = atoi(argv[2]);
   }
 
   MPI_Bcast(&max, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&rounds, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
   int slice = (max + 1) / size + 1;
   from = slice * rank;
