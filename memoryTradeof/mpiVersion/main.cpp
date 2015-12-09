@@ -1,6 +1,5 @@
 /* vim: set softtabstop=2 shiftwidth=2 expandtab : */
 
-/* C Example */
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,9 +21,9 @@ int maxCount;
 
 int length(long n) {
   int res = 0;
-  if (n < maxCount && counts[n] != -1) {
+  if (likely(n < maxCount && counts[n] != -1)) {
     return counts[n];
-  } else if (n > 1) {
+  } else if (unlikely(n > 1)) {
     res = length(syracuse_next(n)) + 1;
   }
 
@@ -109,18 +108,14 @@ int main (int argc, char* argv[])
     }
   }
 
-
-  /** 
-   * Share results
-   */
-  /**for(int i = 0 ; i < size; ++i) {
-    MPI_Bcast(counts + i * slice, slice, MPI_INT, i, MPI_COMM_WORLD);
-  }*/
+  int fin = 0;
 
   if(rank == 0) {
-    /*for (int i = 2; i < max; ++i) {
-      std::cout << counts[i] << std::endl;
-    }*/
+    for (int i = 2; i < max; ++i) {
+      fin += counts[i];
+      fin = fin % 77779;
+    }
+    std::cout << fin << std::endl;
   }
 
   delete counts;
