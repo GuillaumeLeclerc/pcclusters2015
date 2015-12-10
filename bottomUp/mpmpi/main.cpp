@@ -1,4 +1,5 @@
 /* vim: set softtabstop=2 shiftwidth=2 expandtab : */
+#include  <x86intrin.h>
 #include <omp.h>
 #include <mpi.h>
 #include <stdio.h>

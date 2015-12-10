@@ -37,9 +37,12 @@ int main(int argc, const char** argv) {
 
 	toCompute->push_back(start);
 
+
+	int computed = 0;
 	while (toCompute->size() > 0) {
 		std::vector<computationRequest> *next = new std::vector<computationRequest>();
 		for (int j = 0 ; j < toCompute->size() ; ++j) {
+			computed++;
 			computationRequest a = toCompute->at(j);
 			if (a.value < values.size()) {
 				values[a.value] = a.depth;
@@ -57,6 +60,9 @@ int main(int argc, const char** argv) {
 		delete toCompute;
 		toCompute = next;
 	}
+
+	std::cout << computed * 100.0 / max << std::endl;
+	exit(0);
 
 	int unknown = 0;
 	for (int j = 0 ; j < values.size() ; ++j) {
