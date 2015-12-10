@@ -1,11 +1,13 @@
 /* vim: set softtabstop=2 shiftwidth=2 expandtab : */
-#include  <x86intrin.h>
+#include <iostream>
 #include <omp.h>
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <vector>
+#include <string.h>
+#include <sstream>
 
 #define likely(x)      __builtin_expect(!!(x), 1)
 #define unlikely(x)    __builtin_expect(!!(x), 0)
@@ -13,7 +15,7 @@
 /**
  * This represent the length of a syracuse serie
  */
-typedef unsigned int length;
+typedef unsigned char length;
 
 /**
  * This represents a value of a given syracuse serie
@@ -39,7 +41,7 @@ int processes;
 /**
  * The number of series
  */
-unsigned int N;
+size_t N;
 
 /**
  * The number of computation rounds
@@ -164,7 +166,9 @@ int main (int argc, char* argv[])
   /**
    * Reading arguments
    */
-  N = atoi(argv[1]);
+  std::istringstream iss(argv[1]);
+  iss >> N;
+  std::cout << N <<  std::endl;
   M = atoi(argv[2]);
   const int T = atoi(argv[3]);
   if (T > 0) {
