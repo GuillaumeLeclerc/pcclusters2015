@@ -2,7 +2,9 @@
 
 #include <mpi.h>
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
+#include <string.h>
 #include <map>
 #include <vector>
 
@@ -45,7 +47,6 @@ int length(long n, long original, int jumps = 0) {
 }
 
 void exchangeBuffers(int* bufferLengths, int rank, int size) {
-  int* buffers[rank];
   bufferLengths[rank] = buffer.size();
   for(int i = 0 ; i < size; ++i) {
     MPI_Bcast(bufferLengths + i, 1, MPI_INT, i, MPI_COMM_WORLD);
@@ -77,7 +78,6 @@ int main (int argc, char* argv[])
   int max;
   int to;
   int rounds;
-  int cacheSize;
 
   int from;
 
@@ -85,13 +85,12 @@ int main (int argc, char* argv[])
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);        /* get current process id */
   MPI_Comm_size (MPI_COMM_WORLD, &size);        /* get number of processes */
   if (rank == 0) {
-    if (argc < 4) {
+    if (argc < 3) {
       std::cout << "You must give the number of series to compute and the number of rounds" << std::endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
     max = atoi(argv[1]);
     rounds = atoi(argv[2]);
-    cacheSize = atoi(argv[3]);
   }
 
   MPI_Bcast(&max, 1, MPI_INT, 0, MPI_COMM_WORLD);

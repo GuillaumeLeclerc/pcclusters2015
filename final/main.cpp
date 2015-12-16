@@ -22,29 +22,26 @@ std::vector<size_t> newValues;
 size_t savings = 0;
 size_t nn = 0;
 
-std::string packData() {
-  std::stringstream ss;
+std::vector<size_t> packData() {
+  std::vector<size_t> result;
   for (size_t index : newValues) {
-    ss << index << "-" << computed[index] << ";";
+    mpz_class val = computed[index];
+    if (val.fits_ulong_p()) {
+      result.push_back(index);
+      result.push_back(val.get_ui());
+    }
   }
-  return ss.str();
+  return result;
 }
 
-void unpackData(std::string data) {
-  std::stringstream ss(data);
-  std::string item;
-  while (std::getline(ss, item, ';')) {
-    std::stringstream iss(item);
-    std::string index, value;
-    std::getline(iss, index,'-');
-    std::getline(iss, value,'-');
-    std::istringstream indexss(index);
-    mpz_class rvalue(value);
-    size_t rindex;
-    indexss >> rindex;
-    if (computed[rindex] == 0) {
+void unpackData(std::vector<size_t> data) {
+  for (size_t i = 0 ; i < data.size() ; ++i) {
+    size_t index = data[i];
+    ++i;
+    size_t value = data[i];
+    if (computed[index] == 0) {
+      computed[index] = value;
       nn++;
-      computed[rindex] = rvalue;
     }
   }
 }
@@ -159,20 +156,23 @@ int main (int argc, char* argv[])
     mpz_class to = from + valuesPerNode;
     computeInterval(from, to);
     nn = 0;
-    std::string data = packData();
+    std::vector<size_t> data = packData();
     for (int node = 0; node < totalNodes; ++node) {
       size_t dataLen;
       if (node == currentNode) {
-        dataLen = data.size() + 1;
+        dataLen = data.size();
       } 
-      MPI_Bcast(&dataLen, 1, MPI_UNSIGNED_LONG, node, MPI_COMM_WORLD);
-      if (node == currentNode) {
-        MPI_Bcast(const_cast<char*>(data.c_str()), dataLen, MPI_CHAR, node, MPI_COMM_WORLD);
-      } else {
-        char* rawData = new char[dataLen];
-        MPI_Bcast(rawData, dataLen, MPI_CHAR, node, MPI_COMM_WORLD);
-        std::string got(rawData);
-        unpackData(got);
+      MPI_Bcast(&dataLen, 1, MPI_UINT64_T, node, MPI_COMM_WORLD);
+      if (dataLen != 0) {
+        if (node == currentNode) {
+          MPI_Bcast(&data[0], dataLen, MPI_UINT64_T, node, MPI_COMM_WORLD);
+        } else {
+          size_t* rawData = new size_t[dataLen];
+          MPI_Bcast(rawData, dataLen, MPI_UINT64_T, node, MPI_COMM_WORLD);
+          std::vector<size_t> toUnpack(rawData, rawData + dataLen);
+          unpackData(toUnpack);
+          delete rawData;
+        }
       }
     }
     //std::cout << "round " << i << ", node: " << currentNode << ", from: " << from << ", to: " << to << " toSend: " << newValues.size() << ", learned: " << nn <<  std::endl;

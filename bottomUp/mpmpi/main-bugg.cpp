@@ -13,15 +13,6 @@
 #define likely(x)      __builtin_expect(!!(x), 1)
 #define unlikely(x)    __builtin_expect(!!(x), 0)
 
-#define ERRR(command) do { \
-  int err = command; \
-  if (err != MPI_SUCCESS) {\
-    printf("There was an error at line %d\n", __LINE__);\
-    MPI_Abort(1);\
-  }\
-} while(false)
-
-
 /**
  * This represent the length of a syracuse serie
  */
@@ -42,8 +33,8 @@ typedef unsigned long value;
  * This is the data that will be shared accross the network
  */
 struct computation {
-  length length;
-  value value;
+  length cl;
+  value cv;
 };
 
 // Corresponding MPI type
@@ -79,7 +70,7 @@ size_t N;
 /**
  * The number of computation rounds
  */
-unsigned int M;
+size_t M;
 
 
 /**
@@ -121,13 +112,13 @@ std::vector<value>* getNextComputeStage(std::vector<value>* previousStage, lengt
 void bottomUpPrecompute() {
   const value start = 1;
   std::vector<value>* toCompute = new std::vector<value>();
-  std::vector<value>* nextCompute;
   length depth = 0;
 
   toCompute->push_back(start);
 
   int threadCount;
 
+#pragma omp parallel 
   {
     threadCount = omp_get_num_threads();
   }
@@ -138,6 +129,7 @@ void bottomUpPrecompute() {
     depth++;
   }
 
+#pragma omp parallel for
   for (unsigned int i = 0 ; i < toCompute->size() ; i++) {
     length localDepth = depth;
     const value parallelStart = toCompute->at(i);
@@ -174,8 +166,9 @@ length computeLength(value n) {
   if (n < N) {
     if (computed[n] == 0 && !sharing) {
       struct computation currentValue;
-      currentValue.value = n;
-      currentValue.length = res;
+      currentValue.cv = n;
+      currentValue.cl = res;
+#pragma omp critical(toShare)
       toShare.push_back(currentValue);
     }
     computed[n] = res;
@@ -187,19 +180,16 @@ size_t sharing_round = 1;
 void shareProgress() {
   printf("start sharing(%lu) by thread %d on node %d\n", sharing_round, omp_get_thread_num(), rank);
   fflush(stdout);
-  value* values; 
-  length* lengths;
+  struct computation* computationBuffer;
   //filling the buffer in parallel
   sharing = true;
   size_t toShareSize;
+#pragma omp critical(toShare) 
+  toShareSize = toShare.size();
+  computationBuffer = new struct computation[toShareSize];
   {
-    toShareSize = toShare.size();
-    values = new value[toShareSize];
-    lengths = new length[toShareSize];
-    for (size_t i = 0 ; i < toShareSize; ++i) {
-      struct computation cc = toShare.at(1);
-      values[i] = cc.value;
-      lengths[i] = cc.length;
+    for (size_t i = 0 ; i < toShare.size(); ++i) {
+      computationBuffer[i] = toShare.at(i);
     }
   }
   sharing = false;
@@ -211,7 +201,7 @@ void shareProgress() {
       sizeOfDataToTransmit = toShareSize;
     }
 
-    ERRR(MPI_Bcast(&sizeOfDataToTransmit, 1, MPI_INT, node, MPI_COMM_WORLD));
+    MPI_Bcast(&sizeOfDataToTransmit, 1, MPI_INT, node, MPI_COMM_WORLD);
 
     printf("size of data to transmit %lu (r:%d)\n", sizeOfDataToTransmit, rank);
     fflush(stdout);
@@ -225,17 +215,15 @@ void shareProgress() {
       currentRoundComputation = new struct computation[sizeOfDataToTransmit];
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    printf("start broadcasting values (p:%d, s:%lu, n:%d)\n", processes, sizeOfDataToTransmit, node);
+    printf("start broadcasting values\n");
     //broadcast the values
     MPI_Bcast(currentRoundComputation, sizeOfDataToTransmit, MPI_COMPUTATION, node, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
     printf("end broadcasting values\n");
 
     if (rank != node) { // if I am not the sender
-      for (size_t i; i < sizeOfDataToTransmit; ++i) {
+      for (size_t i = 0; i < sizeOfDataToTransmit; ++i) {
         struct computation currentComputation = currentRoundComputation[i];
-        computed[currentComputation.value] = currentComputation.length;
+        computed[currentComputation.cv] = currentComputation.cl;
       }
     }
   }
@@ -256,14 +244,11 @@ void generateMPITypes() {
     MPI_Datatype types[2] = {MPI_VALUE, MPI_LENGTH};
     MPI_Aint     offsets[2];
 
-    offsets[0] = offsetof(struct computation, length);
-    offsets[1] = offsetof(struct computation, value);
-
-    printf("offsets %d %d", offsets[0], offsets[1]);
+    offsets[0] = offsetof(struct computation, cl);
+    offsets[1] = offsetof(struct computation, cv);
 
     MPI_Type_create_struct(nitems, blocklengths, offsets, types, &mpiComputationType);
-    int res = MPI_Type_commit(&mpiComputationType);
-    printf("generation Res : %d %d", res, MPI_SUCCESS);
+    MPI_Type_commit(&mpiComputationType);
 }
 
 /**
@@ -336,19 +321,22 @@ int main (int argc, char* argv[])
   value mod = N / M;
   // only the master thread of master node
   if (rank == 0 && omp_get_thread_num() == 0) {
-    printf("mod : %lu", mod);
+    printf("mod %d",  10000/2);
   }
 
 
+#pragma omp parallel for reduction(+:desoptimizer)
   for (value i = 2 ; i < N; i++) {
     desoptimizer += computeLength(i);
     if (processes > 1 && i % mod == 1) { // no need to share if there is only one node
       printf("share at %lu\n", i);
+#pragma omp critical(sharing) // no two threads should be sharing at the same time !
       shareProgress();
     }
   }
   // last sharing
   if (processes > 1) {
+#pragma omp critical(sharing) // no two threads should be sharing at the same time !
     shareProgress();
   }
 
