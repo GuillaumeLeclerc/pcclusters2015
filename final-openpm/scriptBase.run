@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node __TPN__
 #SBATCH --cpus-per-task __TPT__
 #SBATCH --mem 64000
-#SBATCH --time 00:20:00
+#SBATCH --time 00:05:00
 
 #SBATCH --account=pppcc2016
 
@@ -13,12 +13,4 @@ module load mvapich2/2.0.1/gcc-4.4.7
 module load gcc/4.8.3
 
 echo "__N__ - __TPT__ - __R__"
-srun /home/gpolecle/final-opm/main 1 __R__
-srun /home/gpolecle/final-opm/main 10 __R__
-srun /home/gpolecle/final-opm/main 100 __R__
-srun /home/gpolecle/final-opm/main 1000 __R__
-srun /home/gpolecle/final-opm/main 10000 __R__
-srun /home/gpolecle/final-opm/main 100000 __R__
-srun /home/gpolecle/final-opm/main 1000000 __R__
-srun /home/gpolecle/final-opm/main 10000000 __R__
 srun /home/gpolecle/final-opm/main 100000000 __R__

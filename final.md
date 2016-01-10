@@ -1,5 +1,5 @@
 ---
-title: Programmation on PC clusters - Experimental evidence of the Collatz conjecture
+title: Parallelization on PC clusters - Experimental evidence of the Collatz conjecture
 author: Guillaume Leclerc (224338)
 documentclass: report
 toc: true
@@ -29,7 +29,7 @@ $$
 The Syracuse series
 -------------------
 
-Now that we have defined the Syracuse recurrence we can define a Syracuse serie. There are as many series as positive integers. We can define the $k^{th}$ Syracuse serie this way: 
+Now that we have defined the Syracuse recurrence we can define a Syracuse series. There are as many series as positive integers. We can define the $k^{th}$ Syracuse series this way: 
 
 $$
 S_k(n) =\left\{
@@ -42,9 +42,9 @@ $$
 
 ### Examples
 
-- The $4^{th}$ serie: 4, 2, 1, 4, 2, 1, ...
-- The $7^{th}$ serie: 7, 22, 11, 34, 17, 52, 26, 13, 40, 20, 10, 5, 16, 8, 4, 2, 1, ...
-- the $8^{th}$ serie: 8, 4, 2, 1, 4, 2, 1, ...
+- The $4^{th}$ series: 4, 2, 1, 4, 2, 1, ...
+- The $7^{th}$ series: 7, 22, 11, 34, 17, 52, 26, 13, 40, 20, 10, 5, 16, 8, 4, 2, 1, ...
+- the $8^{th}$ series: 8, 4, 2, 1, 4, 2, 1, ...
 
 
 The Collatz/Syracuse conjecture
@@ -52,8 +52,8 @@ The Collatz/Syracuse conjecture
 
 As you might already have noticed, the series are infinite and more interesting it seems they always eventually reach 1. We can now define the Collatz conjecture in different ways (they are both equivalent): 
 
-- Every Syracuse serie eventually reach 1
-- Every Syracuse serie only contain the trivial cycle (1, 4, 2)
+- Every Syracuse series eventually reach 1
+- Every Syracuse series only contain the trivial cycle (1, 4, 2)
 
 There are other ways to define this conjecture but we will not use them so it was not useful to include them in this document.
 
@@ -70,7 +70,7 @@ Naive algorithm
 
 ### Sequential implementation
 
-This is the naive sequencial algorithm:
+This is the naive sequential algorithm:
 
 ```javascript
 for(i = 2; i < T; i++) {
@@ -87,7 +87,7 @@ for(i = 2; i < T; i++) {
 }
 ```
 
-If this piece of code does stop. Then the Collatz conjecture is verified for all Syracuses series up to $T$.In Any real world application we would like to add a cycle detection algorithm but here we are more intereseted in the parallelisation of this algorithm.
+If this piece of code does stop. Then the Collatz conjecture is verified for all Syracuses series up to $T$.In Any real world application we would like to add a cycle detection algorithm but here we are more interested in the parallelization of this algorithm.
 
 
 
@@ -125,9 +125,9 @@ The heuristic
 
 ### Description of the heuristic
 
-A simple (yet powerfull) heuristic for this problem is to apply a time-memory tradeof. We can save for each starting point we already computed the number of iterations before reaching 1. 
+A simple (yet powerful) heuristic for this problem is to apply a time-memory trade-off. We can save for each starting point we already computed the number of iterations before reaching 1. 
 
-For example we compute the number of steps to go from 5 to 1 it take 5 steps, we memorize it. When we want to compute starting at 10. We apply the recurence once and we find 5 (because $10/2 = 5$) we can deduce that the number of steps from 10 to 1 is $1 + 5 = 6$. And it took only 2 iterations instead of 6 for the naive algorithm.
+For example we compute the number of steps to go from 5 to 1 it take 5 steps, we memorize it. When we want to compute starting at 10. We apply the recurrence once and we find 5 (because $10/2 = 5$) we can deduce that the number of steps from 10 to 1 is $1 + 5 = 6$. And it took only 2 iterations instead of 6 for the naive algorithm.
 
 
 ### Sequential implementation
@@ -160,7 +160,7 @@ In the practical implementation of this algorithm I used a tail recursive functi
 
 #### Complexity analysis
 
-The problem to evaluate this new algorithm is that we cannot predict how many iterations it will take before we reach a value we already know (i.e. already in the hashmap). We can't even predict __if__ we will be using the hashmap for a given serie.
+The problem to evaluate this new algorithm is that we cannot predict how many iterations it will take before we reach a value we already know (i.e. already in the hashmap). We can't even predict __if__ we will be using the hashmap for a given series.
 
 To overcome this we also did an empirical approach to estimate this value. We note $g(x)$ the number of __iterations__ it took with this new algorithm. $x$ goes also from $1$ to $8$. 
 
@@ -252,7 +252,7 @@ $$
 \end{aligned}
 $$
 
-We will cut the interval we want to compute into $M \times N$ sub-intervals named $\tau_1$ to $\tau_{M\times N}$. In our model, we will assume the the work associated to a sub-intervals do not deviate too much from the average case. We will note $t = \frac{T}{N \times M}$ the number of series to compute in a given sub-interval.
+We will cut the interval we want to compute into $M \times N$ sub-intervals named $\tau_1$ to $\tau_{M\times N}$. In our model, we will assume  the work associated to a sub-intervals do not deviate too much from the average case. We will note $t = \frac{T}{N \times M}$ the number of series to compute in a given sub-interval.
 
 In round $r$ each node (of id $n$),  we compute $\tau_{n + r\times N}$. And between each computation round, each node broadcast the new values he found so the others can use it in order to shorten their computation time.
 
@@ -276,7 +276,7 @@ W_{cp} &= M\times W_{si} + (M-1)W_{com} + W_{merge} \\
 &= \frac{C_2T}{N} + (M-1)\frac{T}{M}\log(N)C_3 + \frac{T}{M}C_4 \\
 \end{aligned}
 $$
-To simplifiy our understanding, instead of computing $W_{cp}$ we will compute an upper bound for it. Let's consider $C_5 = \max(C_3, C_4)$
+To simplify our understanding, instead of computing $W_{cp}$ we will compute an upper bound for it. Let's consider $C_5 = \max(C_3, C_4)$
 $$ 
 \begin{aligned}
 W_{cp} &< \frac{C_2T}{N} + \frac{T}{M}\left((M-1)\log(N)C_5 + C_5 \right)\\
@@ -320,13 +320,98 @@ With this constants the best speedup we could achieve is $1.5$ with $3$ nodes.
 Results
 =======
 
+All results were obtained with an implementation using OpenMPI and OpenMP. The tests were run on the Deneb cluster.
+
+In charts you will see different timings, here are the explanations: 
+
+- __init__: this is the time spent during initialization phase. In the theoretical analysis this aspect was neglected because I didn't thought allocating memory would take that long.
+- __compute__: this is the time spent computing. When there are multiple thread this value is the time spent computing by 1 thread. All the threads should have a similar compute time because we are using a dynamic OpenMP scheduler.
+- __pack__: this is the time spent preparing the MPI packet
+- __communicate__: this is the time spent synchronizing hints among nodes
+- __total__: this is the time from the beginning to the end of the program (except the MPI finalization)
+
+Impact of the input size
+------------------------
+
+First we would like to know how increasing the number of series we want to compute (input size) impact the required time to do the computation.
+
+![Evolution of the time in function of the input size\label{input-size}](./final-openpm/input-size.png)
+
+### Explanation
+
+As we already know from our theoretical analysis, the complexity of the optimized algorithm is linear on the number of series to compute.
+From Figure \ref{input-size} we can see we are getting a nice straight line (please note that the two axis are in log scale. The theoretical was consequently correct.
+
+
+
 Impact of the number of rounds
 ------------------------------
 
-![Time to check $10^8$ series, 1 thread per node, MPI \label{time-1tpn-mpi}](./time-1tpn-mpi.png)
+![Impact of the number of rounds, 4 nodes, 1 thread per node\label{impact-rounds-1}](./final-openpm/impact-rounds-1.png)
+
+We can evaluate its impact on figure \ref{impact-rounds-1}
+
+#### Explanation
 
 
-![Relative speedup, 1 thread per node, MPI\label{speedup-1tpn-mpi}](./speedup-1tpn-mpi.png)
+If we increase the number of rounds, nodes are sharing their hints more often. It helps their peers in their computations. Increasing the number of rounds should therefore reduce the computation time and increase the communication time.
 
-As we can see on figures \ref{time-1tpn-mpi} and \ref{speedup-1tpn-mpi} 
+As we can see on figure \ref{scale-threads}, with 4 OpenMP threads, we are getting the same computation time as 4 MPI processes with $100000$ communication rounds. Having more rounds will not reduce the computation time because we already have the same speed as shared memory.
 
+
+Scaling
+-------
+
+### Increasing the number of threads
+
+Our implementation uses both MPI and OpenMP. We will first see how the program scales when we increase the number of threads (on the same node)
+
+![Evolution of the computation time in function of the number of OpenMP threads\label{scale-threads}](./final-openpm/scale-threads.png)
+
+#### Explanation
+
+If we stay on one node, there is no communication (and no packing). Thus the total time should decrease linearly. But as we can see on figure it decrease in a logarithmic way. There are multiple reason to this.
+
+- We neglected the initialization time. Here, for $10^8$ series it is about $4.5$ seconds (about 5% of the sequential time). Now with Amdahl's law we can conclude that the best theoretical speedup we can get is: $\frac{1}{5\%} = 20$ 
+- Here we are only getting a speedup of $\simeq 5$. There must be an explanation. Even if there is no MPI communication. Threads are sharing the same array. The cache coherence algorithm will take time. And sharing data from a processor to another on the same board will also take time, especially in NUMA architecture. This is why we are not getting the expected speedup.
+
+
+### Increasing the number of nodes
+
+#### MPI only
+
+As we can see on figures on figures \ref{node-scale-1-timings} and \ref{node-scale-1-speedup}. The global speedup seems to tend to $4.0$. The computation speedup seems to grow linearly.
+
+![Time in function of the number of MPI nodes \label{node-scale-1-timings}](./final-openpm/scale-node-1-timings.png)
+
+![Speedup with 1 OpenMP thread per node \label{node-scale-1-speedup}](./final-openpm/scale-node-1-speedup.png)
+
+##### Explanation
+
+What we can see here is exactly what was predicated. Only the estimation of the constants were a little off. Here the speedup of the computation is linear, which is normal as the computation is entirely parallel. The communication time is growing and is not parallel. The communication time are equal for 14 nodes. After that point the communication time is exceeding the computation time.
+
+We can also remark that the packing time is decreasing. It makes sense because if there are more nodes, each node compute less values, hence the number of values to send to the peers is less.
+
+#### MPI and OpenMP
+
+![Time in function of the number of MPI nodes \label{node-scale-16-timings}](./final-openpm/scale-node-16-timings.png)
+
+![Speedup with 16 OpenMP thread per node \label{node-scale-16-speedup}](./final-openpm/scale-node-16-speedup.png)
+
+
+##### Explanation
+As we can see on figures \ref{node-scale-16-timings} and \ref{node-scale-16-speedup}. The moment when the communication start taking more time that the computation comes earlier than when we only have 1 OpenMP thread per node. It helps us understanding the problem. In fact the bottleneck comes from the network bandwidth and not from the latency. Here, the communication line and the computation line cross between 1 and 2 nodes. In the previous case (1 OpenMP thread), they cross around 15 nodes. Here, we have 16 threads per node. In both cases the two lines cross when the network has to transmit the values of more than 15 workers (MPI or OpenMP). 
+
+Therefore we took the good decision when we ignored the latency in our model.
+
+We can also see that the speedup is constantly decreasing. Here we are in the case where:
+
+- $C_5 \sim C_2$: The speedup is always decreasing, and less than 1.
+
+It make sense because here we multiplied to local computing power (that means we divided $C_2$) but did'nt change the newtork (represented by $C_5$)
+
+
+Conclusion
+==========
+
+In this project the theoretical analysis was pretty accurate. But this problem is not well suited for high performance computing because there are too many data dependencies.

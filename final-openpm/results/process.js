@@ -5,6 +5,10 @@ lines.pop();
 
 const resultCount = lines.length / 6;
 
+function sortNumber(a,b) {
+	    return a - b;
+}
+
 const results = {};
 
 for (var i = 0 ; i < resultCount; ++i) {
@@ -18,12 +22,14 @@ for (var i = 0 ; i < resultCount; ++i) {
 		timings.push(parseFloat(lines.shift()));
 	}
 
-	if (statsParts[2] === 100) {
+	if ((statsParts[2] === 10000 || statsParts[2] === 10000) && statsParts[1] === 1) {
 		results[statsParts[0]] = timings;
 	}
 }
 
+var keys = Object.keys(results)
+keys.sort(sortNumber);
+keys.forEach(function(x) {
+	console.log(results[x].join(','));
+});
 
-for (var i = 1 ; i < 19; ++i) {
-	console.log(results[i].join(','));
-}
