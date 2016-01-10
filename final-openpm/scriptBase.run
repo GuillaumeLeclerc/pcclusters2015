@@ -1,0 +1,17 @@
+#!/bin/bash -l
+
+#SBATCH --nodes __N__
+#SBATCH --ntasks-per-node __TPN__
+#SBATCH --cpus-per-task __TPT__
+#SBATCH --mem 32000
+#SBATCH --time 00:20:00
+
+#SBATCH --account=pppcc2016
+
+module purge
+module load mvapich2/2.0.1/gcc-4.4.7
+module load gcc/4.8.3
+
+echo "__N__ - __TPT__ - __R__"
+/usr/bin/time -f "%e" sh -c "srun /home/gpolecle/final-opm/main 100000000 __R__ > /dev/null"
+
