@@ -1,0 +1,24 @@
+#!/bin/bash -l
+
+#SBATCH --nodes 4
+#SBATCH --ntasks-per-node 1
+#SBATCH --cpus-per-task 1
+#SBATCH --mem 64000
+#SBATCH --time 00:20:00
+
+#SBATCH --account=pppcc2016
+
+module purge
+module load mvapich2/2.0.1/gcc-4.4.7
+module load gcc/4.8.3
+
+echo "4 - 1 - 1000"
+srun /home/gpolecle/final-opm/main 1 1000
+srun /home/gpolecle/final-opm/main 10 1000
+srun /home/gpolecle/final-opm/main 100 1000
+srun /home/gpolecle/final-opm/main 1000 1000
+srun /home/gpolecle/final-opm/main 10000 1000
+srun /home/gpolecle/final-opm/main 100000 1000
+srun /home/gpolecle/final-opm/main 1000000 1000
+srun /home/gpolecle/final-opm/main 10000000 1000
+srun /home/gpolecle/final-opm/main 100000000 1000
