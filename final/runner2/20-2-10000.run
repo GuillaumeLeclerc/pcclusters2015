@@ -1,0 +1,16 @@
+#!/bin/bash -l
+
+#SBATCH --nodes 20
+#SBATCH --ntasks-per-node 2
+#SBATCH --cpus-per-task 1
+#SBATCH --mem 32000
+#SBATCH --time 00:10:00
+
+#SBATCH --account=pppcc2016
+
+module purge
+module load mvapich2/2.0.1/gcc-4.4.7
+module load gcc/4.8.3
+
+echo "20 - 2 - 10000"
+/usr/bin/time -f "%e" sh -c "srun /home/gpolecle/final/main 100000000 10000 > /dev/null"
